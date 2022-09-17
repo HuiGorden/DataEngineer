@@ -24,5 +24,9 @@ CMD tail -f /dev/null
 # Use below command to launch container
 # docker container run --rm -t -d -v /Users/huijin/Desktop/DataEngineeringLearning/Lab2-Docker/CsvCombine/input:/app/input -v /Users/huijin/Desktop/DataEngineeringLearning/Lab2-Docker/CsvCombine/output:/app/output lab2_csv_combine
 
-# User below command to run the python script on container
+# Use below command to run the python script on container
 # docker container run <containerID> python3 /app/py_script.py
+
+# Use below command to clean up, the container should clean up automatically since -rm is specified when launching the container
+# docker container stop <containerID>
+
