@@ -11,13 +11,13 @@ OUTPUT_DIR="${WORKING_DIR}/output_files/"
 
 # Create dirs
 echo "Create working dir"
-`mkdir ${WORKING_DIR}`
+mkdir ${WORKING_DIR}
 echo "Create log dir"
-`mkdir ${LOG_DIR}`
+mkdir ${LOG_DIR}
 echo "Create csv dir"
-`mkdir ${CSVFILES_DIR}`
+mkdir ${CSVFILES_DIR}
 echo "Create output dir"
-`mkdir ${OUTPUT_DIR}`
+mkdir ${OUTPUT_DIR}
 
 # Redirect log content to file
 exec > >(tee ${LOG_FILE}) 2>&1
