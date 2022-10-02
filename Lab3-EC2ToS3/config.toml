@@ -1,0 +1,9 @@
+[api]
+url='https://www.themuse.com/api/public/jobs?page=50'
+
+[aws]
+bucket='huimylabbucket'
+folder='Lab3EC2ToS3/'
+
+[run]
+py_script="runWithAWSCLI.py"
