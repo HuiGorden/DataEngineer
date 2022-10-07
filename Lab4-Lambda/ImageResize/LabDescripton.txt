@@ -1,0 +1,1 @@
+When upload image to S3 bucket --> trigger lambda function -->lambda function download the image to local, resize it --> upload it back to a new bucket in s3.
