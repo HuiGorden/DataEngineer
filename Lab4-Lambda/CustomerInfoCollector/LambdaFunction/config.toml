@@ -1,0 +1,12 @@
+[api]
+api_url="https://virtserver.swaggerhub.com/wcd_de_lab/top10/1.0.0/add"
+
+[s3]
+bucket='hui-lab4-data-bucket'
+folder='input'
+
+[db]
+host='cdcaixo5wgh0.us-east-1.rds.amazonaws.com'
+port=3306
+database='myfirstrds'
+schema='superstore'

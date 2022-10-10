@@ -1,0 +1,5 @@
+Step1: Setup AWS MySQL RDS
+Step2: Use Python Script to extract top 10 customer ID with most sales on EC2 instance and save as json file to S3
+Step3: Object creation on S3 trigger Lambda Function. Lambda Function download json file from S3 and then read customer ID in that json file.
+Lambda function query RDS to get customer name and combine info.
+Step4: send (customerID, customerName∂) to API endpoint 
