@@ -1,4 +1,7 @@
 --Step 1. Create a procedure
+create or replace file format CSV_COMMA
+type = 'CSV'
+field_delimiter = ',';
 CREATE OR REPLACE PROCEDURE COPY_INTO_S3()
 RETURNS VARIANT
 LANGUAGE JAVASCRIPT
