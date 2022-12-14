@@ -1,0 +1,16 @@
+1. Switch to root user
+Attach Policy "AmazonSESFullAccess" to IAM user "DELearn"
+
+2. Switch to IAM user "DELearn"
+
+3. Go to SES, Configuration → Verified identities → Create Identity → Email address —> enter your email address —> Create identity
+Check email box to verify, click the verification link in the email
+
+4. Create Lambda function named "MidTermS3ScanLambdaFunction", its role is "MidTermS3ScanLambdaFunction-role-gpi78krq"
+Pick "Author from scratch"
+Edit lambda function as code base directory MidTermS3ScanLambdaFunction
+
+5. Add two policy "S3FullAccess", "SESFullAccess" to role "MidTermS3ScanLambdaFunction-role-gpi78krq"
+
+6. Go to CloudWatch, setup a rule with cron 30 8 * * ? *(GMT)
+Set rule name "MidTermCloudWatchRule"
