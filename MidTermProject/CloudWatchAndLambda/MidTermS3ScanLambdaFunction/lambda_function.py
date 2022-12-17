@@ -1,32 +1,34 @@
 import boto3
-import time
 import json
-import subprocess
+import requests
+from datetime import datetime, timedelta
 from send_email import send_email
 
 class Validator:
     
     def __init__(self) -> None:
-        datestr = time.strftime("%Y-%m-%d")
-        self.today_required_file_list = [f'calendar_{datestr}.csv', f'inventory_{datestr}.csv', f'product_{datestr}.csv',f'sales_{datestr}.csv', f'store_{datestr}.csv', "NotExisted"]
+        datestr = (datetime.now() - timedelta(hours=5)).strftime("%Y-%m-%d")
+        self.today_required_file_list = [f'calendar.csv', f'inventory.csv', f'product.csv',f'sales.csv', f'store.csv']
         
-        s3_file_dict = {}
+        self.file_dict = {}
         s3_client=boto3.client('s3')
         for object in s3_client.list_objects_v2(Bucket='hui-mid-term')['Contents']:
-            s3_file_dict[object["Key"].split("/")[-1]] = object["Key"]
-        # {
-        #     "calendar_2022-12-12.csv": "input/calendar_2022-12-12.csv",
-        #     "inventory_2022-12-12.csv": "input/inventory_2022-12-12.csv",
-        #     "inventory_2022-12-13.csv": "input/inventory_2022-12-13.csv",
-        #     "product_2022-12-12.csv": "input/product_2022-12-12.csv",
-        #     "sales_2022-12-12.csv": "input/sales_2022-12-12.csv",
-        #     "store_2022-12-12.csv": "input/store_2022-12-12.csv"
-        # }   
-        self.s3_file_dict = s3_file_dict
+            if datestr not in object["Key"]:
+                print(f"{datestr} not in {object['Key']}, skip")
+                continue
+            self.file_dict[object["Key"].split("/")[-1]] = object["Key"]
+            # {
+            #   "calendar.csv": "input/2022-12-15/calendar.csv",
+            #   "inventory.csv": "input/2022-12-15/inventory.csv",
+            #   "product.csv": "input/2022-12-15/product.csv",
+            #   "sales.csv": "input/2022-12-15/sales.csv",
+            #   "store.csv": "input/2022-12-15/store.csv"
+            # }
         
     def checkFiles(self):
         for each_today_required_file in self.today_required_file_list:
-            if each_today_required_file not in self.s3_file_dict:
+            if each_today_required_file not in self.file_dict:
+                print(f"{each_today_required_file} not existed!")
                 return False
         return True
 
@@ -35,14 +37,19 @@ def lambda_handler(event, context):
 
     # scan S3 bucket
     if validator.checkFiles():
-        # s3_file_url = ['s3://' + '<your s3 bucket>/' + a for a in s3_file_list]
-        # table_name = [a[:-15] for a in s3_file_list]   
-
-        # data = json.dumps({'conf':{a:b for a in table_name for b in s3_file_url}})
-        # # send signal to Airflow    
-        # endpoint= 'http://<your airflow EC2 url>/api/experimental/dags/<your airflow dag name>/dag_runs'
-
-        # subprocess.run(['curl', '-X', 'POST', endpoint, '--insecure', '--data', data])
-        print('File are send to Airflow')
+        EC2_url = "ec2-3-88-152-91.compute-1.amazonaws.com:8080"
+        dag_id = "mid_term_dag"
+        data = {
+            "conf": {
+                "file_dict": validator.file_dict
+            }
+        }
+        # send signal to Airflow    
+        endpoint= f'http://{EC2_url}/api/v1/dags/{dag_id}/dagRuns'
+        header = {
+            "Content-Type": "application/json"
+        }
+        response = requests.post(endpoint, data=json.dumps(data), auth=("airflow", "airflow"), headers=header, timeout=10)
+        print(f'API call to Airflow, response code {response.status_code}, response content {response.text}')
     else:
         send_email()

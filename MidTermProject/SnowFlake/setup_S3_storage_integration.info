@@ -54,7 +54,7 @@ create or replace file format csv_comma_format
 type = 'CSV'
 field_delimiter = ',';
 
-copy into '@MY_S3_STAGE/inventory_2022-12-13.csv' from (select * from midterm_db.raw.inventory where cal_dt <= current_date())
+copy into '@MY_S3_STAGE/2022-12-13/inventory.csv' from (select * from midterm_db.raw.inventory where cal_dt <= current_date())
 file_format=(TYPE=CSV, COMPRESSION='None')
 single = true
 MAX_FILE_SIZE=107772160
