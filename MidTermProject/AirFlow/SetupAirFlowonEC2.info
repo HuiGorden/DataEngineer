@@ -1,0 +1,35 @@
+1. Create EC2 instace. (Ubuntu 22.04LTS, t2.xlarge)
+
+Follow below steps to deploy airflow(CeleryExecutor + Redis Message Broker) on ec2:
+sudo snap install docker
+sudo chmod 666 /var/run/docker.sock
+sudo curl -L "https://github.com/docker/compose/releases/download/1.29.2/docker-compose-Linux-x86_64" -o /usr/bin/docker-compose
+sudo chmod +x /usr/bin/docker-compose
+docker-compose --version # Check if docker-compose is running 
+mkdir airflow-dockerCompose
+cd ~/airflow-dockerCompose/
+curl -LfO 'https://airflow.apache.org/docs/apache-airflow/2.2.5/docker-compose.yaml'
+mkdir ./dags ./logs ./plugins
+echo -e "AIRFLOW_UID=$(id -u)\nAIRFLOW_GID=0" > .env
+docker-compose up airflow-init
+docker-compose up -d # docker-compose down, shutdown airflow docker-compose cluster
+
+2. Use mounted configuration file to configure airflow
+docker cp airflow-dockercompose_airflow-webserver_1:/opt/airflow/airflow.cfg .
+
+Edit airflow.cfg,
+expose_config = True
+dag_dir_list_interval = 30
+auth_backend = airflow.api.auth.backend.basic_auth
+
+Change docker-compose.yaml file, to let each container use our copied out airflow.cfs as configuration file
+volumes:
+- ./dags:/opt/airflow/dags
+- ./logs:/opt/airflow/logs
+- ./plugins:/opt/airflow/plugins
+- ./airflow.cfg:/opt/airflow/airflow.cfg
+
+Restart airflow docker compose cluster
+docker-compose down
+docker-compose up -d
+

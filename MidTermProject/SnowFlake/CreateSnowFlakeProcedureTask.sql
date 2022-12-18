@@ -66,3 +66,6 @@ ALTER TASK load_data_to_s3 resume;
 
 --Step 4. Confirm is 'started'. It only means its activated and scheduled, but not run now.
 DESCRIBE TASK load_data_to_s3;
+
+--Step 5. Set SnowFlake Timezone
+alter account set timezone = 'America/New_York';
