@@ -1,5 +1,5 @@
 from pyspark.sql import SparkSession
-from pyspark.sql.types import StructType, StructField, IntegerType, LongType, FloatType, DateType, StringType, VarcharType, BooleanType, DecimalType
+from pyspark.sql.types import StructType, StructField, IntegerType, LongType, FloatType, DateType, StringType, BooleanType, DecimalType
 from pyspark.sql.functions import col, sum as SUM, avg, unix_timestamp, to_date, date_format, coalesce, lit, when, count
 import json
 import argparse
@@ -11,7 +11,7 @@ class SparkRunner:
         self.spark_name = spark_name
         self.input_file_url = input_file_url
         self.input_file_dict = json.loads(self.input_file_url)
-        self.dateStr = self.input_file_dict.keys()[0].split("/")[1]
+        self.dateStr = list(self.input_file_dict.values())[0].split("/")[1]
         self.output_file_url = "s3://hui-mid-term/output/"
         self.spark = self.spark_init(spark_name)
 
@@ -34,7 +34,7 @@ class SparkRunner:
             StructField("YR_QTR_NUM", IntegerType(), False)
         ]
         calendar_struc = StructType(fields=calendar_schema)
-        calendar_dim = spark.read.csv(f's3a://{self.input_file_dict["calendar.csv"]}', header=True, schema=calendar_struc)
+        calendar_dim = spark.read.csv(f's3a://hui-mid-term/{self.input_file_dict["calendar.csv"]}', header=True, schema=calendar_struc)
 
         store_schema= [
             StructField("STORE_KEY", IntegerType(), False), \
@@ -60,7 +60,7 @@ class SparkRunner:
             StructField("LONGITUDE", DecimalType(19, 6), False)
         ]
         store_struc = StructType(fields=store_schema)
-        store_dim = spark.read.csv(f's3a://{self.input_file_dict["store.csv"]}', header=True, schema=store_struc)
+        store_dim = spark.read.csv(f's3a://hui-mid-term/{self.input_file_dict["store.csv"]}', header=True, schema=store_struc)
 
         product_schema= [
             StructField("PROD_KEY", IntegerType(), False), \
@@ -76,7 +76,7 @@ class SparkRunner:
             StructField("SUBCATEGORY_NAME", StringType(), False)
         ]
         product_struc = StructType(fields=product_schema)
-        product_dim = spark.read.csv(f's3a://{self.input_file_dict["product.csv"]}', header=True, schema=product_struc)       
+        product_dim = spark.read.csv(f's3a://hui-mid-term/{self.input_file_dict["product.csv"]}', header=True, schema=product_struc)       
 
         sales_schema= [
             StructField("TRANS_ID", DateType(), False), \
@@ -93,7 +93,7 @@ class SparkRunner:
             StructField("SHIP_COST", DecimalType(38, 2), False)
         ]
         sales_struc = StructType(fields=sales_schema)
-        sales_dim = spark.read.csv(f's3a://{self.input_file_dict["sales.csv"]}', header=True, schema=sales_struc)
+        sales_dim = spark.read.csv(f's3a://hui-mid-term/{self.input_file_dict["sales.csv"]}', header=True, schema=sales_struc)
 
         inventory_schema= [
             StructField("CAL_DT", DateType(), False), \
@@ -107,7 +107,9 @@ class SparkRunner:
             StructField("NEXT_DELIVERY_DT", DateType(), False)
         ]
         inventory_struc = StructType(fields=inventory_schema)
-        inventory_dim = spark.read.csv(f's3a://{self.input_file_dict["inventory.csv"]}', header=True, schema=inventory_struc)
+        inventory_dim = spark.read.csv(f's3a://hui-mid-term/{self.input_file_dict["inventory.csv"]}', header=True, schema=inventory_struc)
+        inventory_dim = inventory_dim.withColumn("OUT_OF_STOCK_FLG", when(inventory_dim.OUT_OF_STOCK_FLG == 1, True).otherwise(False))
+        inventory_dim = inventory_dim.withColumn("OUT_OF_STOCK_FLG", inventory_dim.OUT_OF_STOCK_FLG.cast(BooleanType()))
 
         daily_sales_stg = sales_dim.groupBy("TRANS_DT", "STORE_KEY", "PROD_KEY").agg(SUM("SALES_QTY").alias("sales_qty"),\
                                                                                     SUM("SALES_AMT").alias("sales_amt"),\
@@ -169,18 +171,18 @@ class SparkRunner:
         return (sales_inv_store_wk, store_dim, product_dim, calendar_dim)
 
     def writeCSV(self, df, output_file_url):
-        df.write.option("header", "True").mode("overwrite").csv(output_file_url)
+        df.repartition(1).write.option("header", "True").mode("overwrite").csv(output_file_url)
     
     def writeParquet(self, df, output_file_url):
-        df.write.mode("overwrite").parquet("output_file_url")
+        df.write.mode("overwrite").partitionBy("yr_num").parquet(output_file_url)
 
     def runJob(self):
         sales_inv_store_wk, store_dim, product_dim, calendar_dim = self.etl(self.spark)
-        # 
+
         self.writeParquet(sales_inv_store_wk, f"{self.output_file_url}{self.dateStr}/")
-        self.writeCSV(store_dim, f"{self.output_file_url}{self.dateStr}/store_dim.csv")
-        self.writeCSV(product_dim, f"{self.output_file_url}{self.dateStr}/product_dim.csv")
-        self.writeCSV(calendar_dim, f"{self.output_file_url}{self.dateStr}/calendar_dim.csv")
+        self.writeCSV(store_dim, f"{self.output_file_url}{self.dateStr}/store_dim/")
+        self.writeCSV(product_dim, f"{self.output_file_url}{self.dateStr}/product_dim/")
+        self.writeCSV(calendar_dim, f"{self.output_file_url}{self.dateStr}/calendar_dim/")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -189,11 +191,11 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
     spark_name = args.spark_name
-    input_file_url = args.input_file_url
+    input_file_url = args.input_file_url 
 
     spark_runner = SparkRunner(spark_name, input_file_url)
     spark_runner.runJob()
 
 # command to run the script in local:
 # spark-submit --master local --deploy-mode client spark.py --spark_name 'airflow_lab' --input_file_url './data/orders_amount.csv' --output_file_url './data/orders_amount_output' --avg_order_amount '29171.860335'
-# spark-submit --master yarn --deploy-mode cluster s3://hui-mid-term/midtermSpark.py --spark_name 'midtermProject' --input_file_url '{"calendar.csv": "input/2022-12-19/calendar.csv","inventory.csv": "input/2022-12-19/inventory.csv","product.csv": "input/2022-12-19/product.csv","sales.csv": "input/2022-12-19/sales.csv","store.csv": "input/2022-12-19/store.csv"}'
+# /usr/bin/spark-submit --master yarn --deploy-mode cluster s3://hui-mid-term/midtermSpark.py --spark_name 'midtermProject' --input_file_url '{"calendar.csv": "input/2022-12-19/calendar.csv","inventory.csv": "input/2022-12-19/inventory.csv","product.csv": "input/2022-12-19/product.csv","sales.csv": "input/2022-12-19/sales.csv","store.csv": "input/2022-12-19/store.csv"}'
