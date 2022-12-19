@@ -29,6 +29,9 @@ volumes:
 - ./plugins:/opt/airflow/plugins
 - ./airflow.cfg:/opt/airflow/airflow.cfg
 
+Not load example dag:
+AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
+
 Restart airflow docker compose cluster
 docker-compose down
 docker-compose up -d
