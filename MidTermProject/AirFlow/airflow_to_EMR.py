@@ -40,7 +40,7 @@ with DAG(dag_id = 'airflow_to_EMR', default_args = default_args) as dag:
             'HadoopJarStep': {
                 'Jar': 'command-runner.jar',
                 'Args': [
-                    'spark-submit',
+                    '/usr/bin/spark-submit',
                     '--deploy-mode', 'cluster',
                     '--master', 'yarn',
                     's3://hui-mid-term/midtermSpark.py', ## the S3 folder store the pyspark script.
@@ -54,15 +54,15 @@ with DAG(dag_id = 'airflow_to_EMR', default_args = default_args) as dag:
     emrAddStepTask = EmrAddStepsOperator(
         task_id = 'add_emr_steps',
         job_flow_id = CLUSTER_ID,
-        # aws_conn_id = "midterm_emr_connection",  ## connection id of AWS saved in the Airlow Adim -> Connections
+        aws_conn_id = "midterm_emr_connection",  # connection id of AWS saved in the Airlow Adim -> Connections
         steps = SPARK_STEPS        ## SPARK_STEPS we defined in previous code
     )
 
     emrSensorTask = EmrStepSensor(
         task_id = 'run_emr_steps',
         job_flow_id = CLUSTER_ID,
-        step_id = "{{ task_instance.xcom_pull('add_emr_steps', key='return_value')[0] }}"
-        # aws_conn_id = "midterm_emr_connection"
+        step_id = "{{ task_instance.xcom_pull('add_emr_steps', key='return_value')[0] }}",
+        aws_conn_id = "midterm_emr_connection"
     )                
 
     dummy_task >> parse_request >> emrAddStepTask >> emrSensorTask

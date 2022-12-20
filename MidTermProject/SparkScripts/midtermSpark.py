@@ -15,7 +15,7 @@ class SparkRunner:
         self.spark = self.spark_init(spark_name)
 
     def spark_init(self, spark_name):
-        spark = SparkSession.builder.master("yarn").appName(spark_name).getOrCreate()
+        spark = SparkSession.builder.appName(spark_name).getOrCreate()
         return spark
 
     def etl(self, spark):
