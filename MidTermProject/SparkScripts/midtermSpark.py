@@ -4,7 +4,6 @@ from pyspark.sql.functions import col, sum as SUM, avg, unix_timestamp, to_date,
 import json
 import argparse
 
-
 class SparkRunner:
 
     def __init__(self, spark_name, input_file_url) -> None:
@@ -152,18 +151,38 @@ class SparkRunner:
 
         sales_inv_store_wk = sales_inv_store_dy.join(calendar_dim, ['cal_dt'], how='inner')
         sales_inv_store_wk = sales_inv_store_wk.groupBy("YR_NUM", "WK_NUM", "store_key", "prod_key")\
-            .agg(SUM("sales_qty").alias("wk_sales_qty"),\
-                avg("sales_price").alias("avg_sales_price"),\
-                SUM("sales_amt").alias("wk_sales_amt"),\
-                SUM("discount").alias("wk_discount"),\
-                SUM("sales_cost").alias("wk_sales_cost"),\
-                SUM("sales_mgrn").alias("wk_sales_mgrn"),\
-                SUM(when(calendar_dim["DAY_OF_WK_NUM"] == 6, sales_inv_store_dy["stock_on_hand_qty"]).otherwise(0)).alias("eop_stock_on_hand_qty"),\
-                SUM(when(calendar_dim["DAY_OF_WK_NUM"] == 6, sales_inv_store_dy["ordered_stock_qty"]).otherwise(0)).alias("eop_ordered_stock_qty"),\
-                count(when(sales_inv_store_dy["out_of_stock_flg"] == True, 1)).alias("out_of_stock_times"),\
-                count(when(sales_inv_store_dy["in_stock_flg"] == True, 1)).alias("in_stock_times"),\
-                count(when(sales_inv_store_dy["low_stock_flg"] == True, 1)).alias("low_stock_times")
+            .agg(\
+                    # Q1
+                    SUM("sales_qty").alias("wk_sales_qty"),\
+                    # Q2
+                    SUM("sales_amt").alias("wk_sales_amt"),\
+                    # Q3
+                    avg("sales_price").alias("avg_sales_price"),\
+                    # Q4
+                    SUM(when(calendar_dim["DAY_OF_WK_NUM"] == 6, sales_inv_store_dy["stock_on_hand_qty"]).otherwise(0)).alias("eop_stock_on_hand_qty"),\
+                    # Q5
+                    SUM(when(calendar_dim["DAY_OF_WK_NUM"] == 6, sales_inv_store_dy["ordered_stock_qty"]).otherwise(0)).alias("eop_ordered_stock_qty"),\
+                    # Q6
+                    SUM("sales_cost").alias("wk_sales_cost"),\
+                    # Q9
+                    SUM(when(sales_inv_store_dy["low_stock_flg"] == True, sales_inv_store_dy["sales_amt"] - sales_inv_store_dy["stock_on_hand_qty"]).otherwise(0)).alias("potential_low_stock_impact"),\
+                    # Q10
+                    SUM(when(sales_inv_store_dy["out_of_stock_flg"] == True, sales_inv_store_dy["sales_amt"]).otherwise(0)).alias("no_stock_impact"),\
+                    # Q11
+                    count(when(sales_inv_store_dy["low_stock_flg"] == True, 1)).alias("low_stock_times"),\
+                    # Q12
+                    count(when(sales_inv_store_dy["out_of_stock_flg"] == True, 1)).alias("out_of_stock_times"),\
+                    SUM("discount").alias("wk_discount"),\
+                    SUM("sales_mgrn").alias("wk_sales_mgrn"),\
+                    count(when(sales_inv_store_dy["in_stock_flg"] == True, 1)).alias("in_stock_times")\
                 )
+        # Q7
+        sales_inv_store_wk = sales_inv_store_wk.withColumn("in_stock_percentage", 1 - sales_inv_store_wk.out_of_stock_times/7)
+        # Q8
+        sales_inv_store_wk = sales_inv_store_wk.withColumn("low_stock_impact", sales_inv_store_wk["out_of_stock_times"] + sales_inv_store_wk["low_stock_times"])
+        # Q13
+        sales_inv_store_wk = sales_inv_store_wk.withColumn("weeks_to_supply", sales_inv_store_wk["eop_stock_on_hand_qty"]/sales_inv_store_wk["wk_sales_qty"])
+
         sales_inv_store_wk = sales_inv_store_wk.withColumnRenamed("YR_NUM","yr_num")\
                 .withColumnRenamed("WK_NUM","wk_num")\
                 .orderBy("yr_num", "wk_num", "store_key", "prod_key")
@@ -171,10 +190,10 @@ class SparkRunner:
         return (sales_inv_store_wk, store_dim, product_dim, calendar_dim)
 
     def writeCSV(self, df, output_file_url):
-        df.repartition(1).write.option("header", "True").mode("overwrite").csv(output_file_url)
+        df.write.option("header", "True").mode("overwrite").csv(output_file_url)
     
     def writeParquet(self, df, output_file_url):
-        df.write.mode("overwrite").partitionBy("yr_num").parquet(output_file_url)
+        df.write.mode("overwrite").parquet(output_file_url)
 
     def runJob(self):
         sales_inv_store_wk, store_dim, product_dim, calendar_dim = self.etl(self.spark)

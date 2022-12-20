@@ -1,0 +1,13 @@
+Glue:
+Create Glue Crawler named "MidTermCrawlers"
+Add data source, Choose to crawl "s3://hui-mid-term/output/2022-12-19"
+Create a new role named "AWSGlueServiceRole-Midterm"
+Create a Glue database "midterm_database"
+Crawler scheduler "On demand"
+click "Create a single schema for each S3 path"
+Run the Crawler
+
+Athena:
+Create S3 bucket "midterm-athena-query-result" for athena query result
+Use S3 bucket "midterm-athena-query-result" for athena query result
+Try Athena Query editor

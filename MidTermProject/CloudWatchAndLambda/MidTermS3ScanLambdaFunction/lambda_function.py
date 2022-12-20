@@ -37,8 +37,8 @@ def lambda_handler(event, context):
 
     # scan S3 bucket
     if validator.checkFiles():
-        EC2_url = "ec2-3-88-152-91.compute-1.amazonaws.com:8080"
-        dag_id = "mid_term_dag"
+        EC2_url = "ec2-54-226-180-66.compute-1.amazonaws.com:8080"
+        dag_id = "airflow_to_EMR"
         data = {
             "conf": {
                 "file_dict": validator.file_dict
