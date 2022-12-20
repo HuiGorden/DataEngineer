@@ -208,7 +208,7 @@ if __name__ == "__main__":
     parser.add_argument('--spark_name', help="spark_name")
     parser.add_argument('--input_file_url', help="input file url json string")
 
-    args = parser.parse_args()
+    args = parser.parse_known_args()
     spark_name = args.spark_name
     input_file_url = args.input_file_url 
 

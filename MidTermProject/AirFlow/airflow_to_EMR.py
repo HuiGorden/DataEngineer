@@ -28,8 +28,11 @@ with DAG(dag_id = 'airflow_to_EMR', default_args = default_args) as dag:
     dummy_task = DummyOperator(task_id='start')
 
     def parse_parameter(**kwargs):
+        print(type(kwargs['dag_run'].conf['file_dict']))
         print(kwargs['dag_run'].conf['file_dict'])
-        kwargs['ti'].xcom_push(key = 'input_file_url', value = kwargs['dag_run'].conf['file_dict'])
+        input_file_url_jsonString = json.dumps(kwargs['dag_run'].conf['file_dict'])
+        print(input_file_url_jsonString)
+        kwargs['ti'].xcom_push(key = 'input_file_url', value = input_file_url_jsonString)
 
     parse_request = PythonOperator(task_id = 'parse_parameter', python_callable = parse_parameter)    
 
@@ -41,11 +44,16 @@ with DAG(dag_id = 'airflow_to_EMR', default_args = default_args) as dag:
                 'Jar': 'command-runner.jar',
                 'Args': [
                     '/usr/bin/spark-submit',
-                    '--deploy-mode', 'cluster',
+                    '--class', 'Driver.MainApp',
                     '--master', 'yarn',
+                    '--deploy-mode', 'cluster',
+                    '--num-executors', '2',
+                    '--driver-memory', '512m',
+                    '--executor-memory', '3g',
+                    '--executor-cores', '2',            
                     's3://hui-mid-term/midtermSpark.py', ## the S3 folder store the pyspark script.
                     '--spark_name', 'mid_term',
-                    '--input_file_url', "{{ task_instance.xcom_pull('parse_parameter', key='input_file_url') }}"
+                    '--input_file_url', "{{ task_instance.xcom_pull('parse_parameter', key='input_file_url') }}"                  
                 ]
             }
         }
