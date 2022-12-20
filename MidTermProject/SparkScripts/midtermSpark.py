@@ -208,7 +208,7 @@ if __name__ == "__main__":
     parser.add_argument('--spark_name', help="spark_name")
     parser.add_argument('--input_file_url', help="input file url json string")
 
-    args = parser.parse_known_args()
+    args = parser.parse_args()
     spark_name = args.spark_name
     input_file_url = args.input_file_url 
 
@@ -218,3 +218,4 @@ if __name__ == "__main__":
 # command to run the script in local:
 # spark-submit --master local --deploy-mode client spark.py --spark_name 'airflow_lab' --input_file_url './data/orders_amount.csv' --output_file_url './data/orders_amount_output' --avg_order_amount '29171.860335'
 # /usr/bin/spark-submit --master yarn --deploy-mode cluster s3://hui-mid-term/midtermSpark.py --spark_name 'midtermProject' --input_file_url '{"calendar.csv": "input/2022-12-19/calendar.csv","inventory.csv": "input/2022-12-19/inventory.csv","product.csv": "input/2022-12-19/product.csv","sales.csv": "input/2022-12-19/sales.csv","store.csv": "input/2022-12-19/store.csv"}'
+# /usr/bin/spark-submit --class Driver.MainApp --master yarn --deploy-mode cluster --num-executors 2 --driver-memory 512m --executor-memory 3g --executor-cores 2 s3://hui-mid-term/midtermSpark.py --spark_name 'mid_term' --input_file_url '{"calendar.csv": "input/2022-12-20/calendar.csv", "inventory.csv": "input/2022-12-20/inventory.csv", "product.csv": "input/2022-12-20/product.csv", "sales.csv": "input/2022-12-20/sales.csv", "store.csv": "input/2022-12-20/store.csv"}'
