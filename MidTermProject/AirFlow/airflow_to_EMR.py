@@ -21,7 +21,7 @@ default_args={
     'backfill': False
 }
 
-CLUSTER_ID = "j-3967ZDLVUJ0S7" # EMR cluster ID
+CLUSTER_ID = "j-2QDPF0Q54HJV7" # EMR cluster ID
 
 with DAG(dag_id = 'airflow_to_EMR', default_args = default_args) as dag:
 

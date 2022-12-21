@@ -201,7 +201,7 @@ class SparkRunner:
     def runJob(self):
         sales_inv_store_wk, store_dim, product_dim, calendar_dim = self.etl(self.spark)
 
-        self.writeParquet(sales_inv_store_wk, f"{self.output_file_url}{self.dateStr}/")
+        self.writeParquet(sales_inv_store_wk, f"{self.output_file_url}{self.dateStr}/fact")
         self.writeCSV(store_dim, f"{self.output_file_url}{self.dateStr}/store_dim/")
         self.writeCSV(product_dim, f"{self.output_file_url}{self.dateStr}/product_dim/")
         self.writeCSV(calendar_dim, f"{self.output_file_url}{self.dateStr}/calendar_dim/")

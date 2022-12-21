@@ -1,0 +1,46 @@
+Glue:
+Create Glue Crawler named "MidTermCrawlers"
+Add data source, Choose to crawl "s3://hui-mid-term/output/"
+Create a new role named "AWSGlueServiceRole-Midterm"
+Create a Glue database "midterm_database"
+Crawler scheduler "On demand"
+click "Create a single schema for each S3 path"
+Run the Crawler
+
+
+Athena:
+Create S3 bucket "midterm-athena-query-result" for athena query result
+Use S3 bucket "midterm-athena-query-result" for athena query result
+Try Athena Query editor
+
+
+SuperSet:
+Create EC2 instance
+
+Step1: install docker
+ssh -i ~/.ssh/MyFirstKeyPair.pem ubuntu@ec2-18-206-14-222.compute-1.amazonaws.co
+sudo snap install docker
+sudo chmod 666 /var/run/docker.sock
+cd ~
+docker pull stantaov/superset-athena:0.0.1
+docker run -d -p 8088:8088 --name superset stantaov/superset-athena:0.0.1
+docker exec -it superset superset fab create-admin --username admin --firstname Superset --lastname Admin --email admin@superset.com --password admin
+docker exec -it superset superset db upgrade
+docker exec -it superset superset load_examples
+docker exec -it superset superset init
+
+Step2: Create Connector to Athena
+login superset dashboard <ec2_hostname>:8088
+Data->Databases->Add Database icon
+awsathena+rest://AKIAQ2M3YI6QFXMFESOV:INQCqA4NZ+mx91zpxGevwTlb2P7gtqgPmdZlFrJX@athena.us-east-1.amazonaws.com/midterm_database?s3_staging_dir=s3://midterm-athena-query-result/&work_group=primary
+
+Data->DataSets->Add Dataset icon->Add Calendar dim
+Data->DataSets->Add Dataset icon->Add Weekly Fact dim
+Data->DataSets->Add Dataset icon->Add Product dim
+Data->DataSets->Add Dataset icon->Add Store dim
+
+Add Chart
+SELECT  "midterm_database"."store_dim"."store_key", sum(potential_low_stock_impact) as potential_low_stock_impact,
+FROM "midterm_database"."fact" inner join "midterm_database"."store_dim" on "midterm_database"."fact"."store_key"="midterm_database"."store_dim"."store_key"
+GROUP BY ("yr_num", "midterm_database"."store_dim"."store_key")
+LIMIT 100
