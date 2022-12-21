@@ -32,7 +32,7 @@ docker exec -it superset superset init
 Step2: Create Connector to Athena
 login superset dashboard <ec2_hostname>:8088
 Data->Databases->Add Database icon
-awsathena+rest://AKIAQ2M3YI6QFXMFESOV:INQCqA4NZ+mx91zpxGevwTlb2P7gtqgPmdZlFrJX@athena.us-east-1.amazonaws.com/midterm_database?s3_staging_dir=s3://midterm-athena-query-result/&work_group=primary
+awsathena+rest://<Access key ID>:<Secret access key>@athena.us-east-1.amazonaws.com/midterm_database?s3_staging_dir=s3://midterm-athena-query-result/&work_group=primary
 
 Data->DataSets->Add Dataset icon->Add Calendar dim
 Data->DataSets->Add Dataset icon->Add Weekly Fact dim
