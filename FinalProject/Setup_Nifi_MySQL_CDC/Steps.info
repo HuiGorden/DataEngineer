@@ -1,0 +1,79 @@
+1. launch EC2 instance (Ubuntu, xlarge favor)
+2. SSH to EC2 instance
+3. install docker and docker compose
+4. reboot EC2 instance
+5. # Setup MySQL in Docker Container 
+docker run -dit --name mysql -p 3306:3306 -e MYSQL_ROOT_PASSWORD=debezium -e MYSQL_USER=mysqluser -e MYSQL_PASSWORD=mysqlpw debezium/example-mysql:1.6
+docker exec -it 8f0d767993ea bash
+mysql -u root -p # password for root is debezium
+
+CREATE DATABASE demo;
+use demo;
+
+CREATE TABLE bus_status (
+    record_id INT NOT NULL AUTO_INCREMENT,
+    id INT NOT NULL,
+    routeId INT NOT NULL,
+    directionId VARCHAR(40),
+    predictable BOOLEAN,
+    secsSinceReport INT NOT NULL,
+    kph INT NOT NULL,
+    heading INT,
+    lat REAL NOT NULL, 
+    lon REAL NOT NULL,
+    leadingVehicleId INT,
+    event_time DATETIME DEFAULT NOW(),
+    PRIMARY KEY (record_id)
+);
+
+describe bus_status;
+
+6. # Setup Nifi 
+docker run --name nifi -p 8080:8080 -p 8443:8443 --link mysql:mysql -d apache/nifi:1.12.0
+Go to hostname:8080/nifi and configure processor
+
+# Create mysql connector jar
+docker exec -it nifi bash
+mkdir custom-jars
+cd custom-jars
+wget http://java2s.com/Code/JarDownload/mysql/mysql-connector-java-5.1.17-bin.jar.zip
+unzip mysql-connector-java-5.1.17-bin.jar.zip
+
+# Run Processor One by One and check if data inserted into MySQL
+docker exec -it mysql bash
+mysql -u root -p
+
+7. # Create MSK
+Custom Create
+version 2.6.2
+create msk configuration, change "auto.create.topics.enable" to true
+Unauthenticated access
+plaintext between clients and brokers
+uncheck "TLS encryption" within cluster
+use aws managed key to encrypt data
+
+# Use telnet to verfiy broker connectivity
+change mks cluster security group inbound to allow all traffic
+sudo apt-get install telnet -y 
+telnet b-2.finalprojectmsk.y1yepf.c14.kafka.us-east-1.amazonaws.com 9092
+
+# Use Kafka Cli Tool to test interaction with MSK
+sudo apt install default-jre
+wget https://archive.apache.org/dist/kafka/2.6.2/kafka_2.12-2.6.2.tgz
+tar -xzf kafka_2.12-2.6.2.tgz
+cd kafka_2.12-2.6.2/bin/
+vi client.properties
+security.protocol=PLAINTEXT
+./kafka-topics.sh --list --bootstrap-server=$BOOTSTRAP_SERVERS
+
+8. # Create Debezium CDC, to push data from MySQL to MSK 
+docker run -dit --name connect-msk -p 8083:8083 -e GROUP_ID=1 -e CONFIG_STORAGE_TOPIC=my-connect-configs -e OFFSET_STORAGE_TOPIC=my-connect-offsets -e STATUS_STORAGE_TOPIC=my_connect_statuses -e BOOTSTRAP_SERVERS=$BOOTSTRAP_SERVERS -e KAFKA_VERSION=2.6.2 -e CONNECT_CONFIG_STORAGE_REPLICATION_FACTOR=2 -e CONNECT_OFFSET_STORAGE_REPLICATION_FACTOR=2 -e CONNECT_STATUS_STORAGE_REPLICATION_FACTOR=2 --link mysql:mysql debezium/connect:1.8.0.Final
+
+./kafka-topics.sh --list --bootstrap-server=$BOOTSTRAP_SERVERS # check if CDC topic is created on MSK cluster
+
+./kafka-console-consumer.sh  --bootstrap-server $BOOTSTRAP_SERVERS --topic my-connect-configs --from-beginning # check if CDC could write data to MSK cluster
+
+curl -i -X POST -H "Accept:application/json" -H "Content-Type:application/json" localhost:8083/connectors/ -d '{ "name": "bus-connector", "config": { "connector.class": "io.debezium.connector.mysql.MySqlConnector", "tasks.max": "1", "database.hostname": "mysql", "database.port": "3306", "database.user": "root", "database.password": "debezium", "database.server.id": "184054", "database.server.name": "dbserver1", "database.include.list": "demo", "database.history.kafka.bootstrap.servers": "'"$BOOTSTRAP_SERVERS"'", "database.history.kafka.topic": "dbhistory.demo" } }'
+
+# check if CDC push bus data to MSK cluster
+./kafka-console-consumer.sh  --bootstrap-server $BOOTSTRAP_SERVERS  --topic dbserver1.demo.bus_status 
