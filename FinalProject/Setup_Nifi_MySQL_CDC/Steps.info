@@ -4,7 +4,7 @@
 4. reboot EC2 instance
 5. # Setup MySQL in Docker Container 
 docker run -dit --name mysql -p 3306:3306 -e MYSQL_ROOT_PASSWORD=debezium -e MYSQL_USER=mysqluser -e MYSQL_PASSWORD=mysqlpw debezium/example-mysql:1.6
-docker exec -it 8f0d767993ea bash
+docker exec -it mysql bash
 mysql -u root -p # password for root is debezium
 
 CREATE DATABASE demo;
@@ -50,14 +50,15 @@ create msk configuration, change "auto.create.topics.enable" to true
 Unauthenticated access
 plaintext between clients and brokers
 uncheck "TLS encryption" within cluster
+choose "DataEngineeringLearning" as security group
 use aws managed key to encrypt data
 
 # Use telnet to verfiy broker connectivity
-change mks cluster security group inbound to allow all traffic
 sudo apt-get install telnet -y 
 telnet b-2.finalprojectmsk.y1yepf.c14.kafka.us-east-1.amazonaws.com 9092
 
 # Use Kafka Cli Tool to test interaction with MSK
+BOOTSTRAP_SERVERS=b-2.finalproject.34zas9.c3.kafka.ca-central-1.amazonaws.com:9092,b-3.finalproject.34zas9.c3.kafka.ca-central-1.amazonaws.com:9092,b-1.finalproject.34zas9.c3.kafka.ca-central-1.amazonaws.com:9092
 sudo apt install default-jre
 wget https://archive.apache.org/dist/kafka/2.6.2/kafka_2.12-2.6.2.tgz
 tar -xzf kafka_2.12-2.6.2.tgz

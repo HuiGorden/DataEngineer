@@ -1,0 +1,62 @@
+1. Restart EC2 instances
+2. # Remove all exited container
+docker container rm connect-msk
+docker container rm nifi
+docker container rm mysql
+3. # Setup MySQL
+docker run -dit --name mysql -p 3306:3306 -e MYSQL_ROOT_PASSWORD=debezium -e MYSQL_USER=mysqluser -e MYSQL_PASSWORD=mysqlpw debezium/example-mysql:1.6
+docker exec -it mysql bash
+mysql -u root -p # password for root is debezium
+
+CREATE DATABASE demo;
+use demo;
+
+CREATE TABLE bus_status (
+    record_id INT NOT NULL AUTO_INCREMENT,
+    id INT NOT NULL,
+    routeId INT NOT NULL,
+    directionId VARCHAR(40),
+    predictable BOOLEAN,
+    secsSinceReport INT NOT NULL,
+    kph INT NOT NULL,
+    heading INT,
+    lat REAL NOT NULL, 
+    lon REAL NOT NULL,
+    leadingVehicleId INT,
+    event_time DATETIME DEFAULT NOW(),
+    PRIMARY KEY (record_id)
+);
+
+describe bus_status;
+
+4. # Setup Nifi 
+docker run --name nifi -p 8080:8080 -p 8443:8443 --link mysql:mysql -d apache/nifi:1.12.0
+Go to hostname:8080/nifi and configure processor
+# Create mysql connector jar
+docker exec -it nifi bash
+mkdir custom-jars
+cd custom-jars
+wget http://java2s.com/Code/JarDownload/mysql/mysql-connector-java-5.1.17-bin.jar.zip
+unzip mysql-connector-java-5.1.17-bin.jar.zip
+upload Nifi template
+reset JDBC connector password for user root
+enable JDBC connector in nifi
+
+5 # Create MSK
+Custom Create
+provisioned
+version 2.6.2
+create msk configuration, change "auto.create.topics.enable" to true
+Unauthenticated access
+plaintext between clients and brokers
+uncheck "TLS encryption" within cluster
+choose "DataEngineeringLearning" as security group
+use aws managed key to encrypt data
+
+# Use telnet to verfiy broker connectivity
+telnet b-2.finalprojectmsk.y1yepf.c14.kafka.us-east-1.amazonaws.com 9092
+
+# Use Kafka Cli Tool to test interaction with MSK
+BOOTSTRAP_SERVERS=b-2.finalproject.34zas9.c3.kafka.ca-central-1.amazonaws.com:9092,b-3.finalproject.34zas9.c3.kafka.ca-central-1.amazonaws.com:9092,b-1.finalproject.34zas9.c3.kafka.ca-central-1.amazonaws.com:9092
+cd ~/kafka_2.12-2.6.2/bin/
+./kafka-topics.sh --list --bootstrap-server=$BOOTSTRAP_SERVERS
