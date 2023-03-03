@@ -60,3 +60,19 @@ telnet b-2.finalprojectmsk.y1yepf.c14.kafka.us-east-1.amazonaws.com 9092
 BOOTSTRAP_SERVERS=b-2.finalproject.34zas9.c3.kafka.ca-central-1.amazonaws.com:9092,b-3.finalproject.34zas9.c3.kafka.ca-central-1.amazonaws.com:9092,b-1.finalproject.34zas9.c3.kafka.ca-central-1.amazonaws.com:9092
 cd ~/kafka_2.12-2.6.2/bin/
 ./kafka-topics.sh --list --bootstrap-server=$BOOTSTRAP_SERVERS
+
+6. # Create EMR Cluster
+Amazon EMR version:emr-6.8.0(Hadoop3.2.1 + Hive 3.1.3 + Hue 4.10.0 + Spark 3.3.0 + Pig 0.17.0)
+Use for Hive table metadata
+Use for Spark table metadata
+m4.2xlarge
+Auto-termination 1 hour
+uncheck Termination Protection
+Choose EC2 key pair
+EC2 instance profile: EC2DevelopmentRole
+Spark Version:3.3.0(Scala:2.12.15)
+
+7.
+aws s3 cp sparkScript.py s3://hui-final-project/sparkScript.py
+ssh to EMR master node as hadoop
+spark-submit --master yarn --deploy-mode cluster --name hui-stremaing-app --jars /usr/lib/hudi/hudi-spark-bundle.jar,/usr/lib/spark/external/lib/spark-avro.jar --conf "spark.sql.catalog.spark_catalog=org.apache.spark.sql.hudi.catalog.HoodieCatalog"  --conf "spark.sql.extensions=org.apache.spark.sql.hudi.HoodieSparkSessionExtension" --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.3.0 s3://hui-final-project/sparkScript.py
