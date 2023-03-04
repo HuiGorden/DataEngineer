@@ -97,4 +97,25 @@ pyspark --jars /usr/lib/hudi/hudi-spark-bundle.jar --conf "spark.serializer=org.
 11. 
 aws s3 cp sparkScript.py s3://hui-final-project/sparkScript.py
 ssh to EMR master node as hadoop
-spark-submit --master yarn --deploy-mode cluster --name hui-stremaing-app --jars /usr/lib/hudi/hudi-spark-bundle.jar,/usr/lib/spark/external/lib/spark-avro.jar --conf "spark.sql.catalog.spark_catalog=org.apache.spark.sql.hudi.catalog.HoodieCatalog"  --conf "spark.sql.extensions=org.apache.spark.sql.hudi.HoodieSparkSessionExtension" --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.3.0 s3://hui-final-project/sparkScript.py
+spark-submit --master yarn --deploy-mode cluster --name hui-stremaing-app --jars /usr/lib/hudi/hudi-spark-bundle.jar --conf "spark.serializer=org.apache.spark.serializer.KryoSerializer" --conf "spark.sql.catalog.spark_catalog=org.apache.spark.sql.hudi.catalog.HoodieCatalog"  --conf "spark.sql.extensions=org.apache.spark.sql.hudi.HoodieSparkSessionExtension" --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.3.0 s3://hui-final-project/sparkScript.py
+
+12.
+Search in Athena, and we should see glue database(catalog/metadata) is created
+
+13. # SuperSet
+cd ~
+docker pull stantaov/superset-athena:0.0.1
+docker run -d -p 8088:8088 --name superset stantaov/superset-athena:0.0.1
+docker exec -it superset superset fab create-admin --username admin --firstname Superset --lastname Admin --email admin@superset.com --password admin
+docker exec -it superset superset db upgrade
+docker exec -it superset superset load_examples
+docker exec -it superset superset init
+
+# Create Connector to Athena
+login superset dashboard <ec2_hostname>:8088
+Data->Databases->Add Database icon
+awsathena+rest://<Access key ID>:<Secret access key>@athena.us-east-1.amazonaws.com/final_project?s3_staging_dir=s3://finalproject-athena-query-result/&work_group=primary
+
+Create Dataset -> bus_status
+Create Chart busMap(Scatterplot)
+Create Dashboard and put chart on it. Set dashboard auto-refresh to 10s
