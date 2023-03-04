@@ -7,7 +7,7 @@ from pyspark.sql.functions import *
 # pyspark --jars /usr/lib/hudi/hudi-spark-bundle.jar --conf "spark.serializer=org.apache.spark.serializer.KryoSerializer" --conf "spark.sql.catalog.spark_catalog=org.apache.spark.sql.hudi.catalog.HoodieCatalog"  --conf "spark.sql.extensions=org.apache.spark.sql.hudi.HoodieSparkSessionExtension" --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.3.0
 
 # Global variable 
-BOOTSTRAP_SERVERS='b-3.finalprojectmsk.fe0wsv.c14.kafka.us-east-1.amazonaws.com:9092,b-1.finalprojectmsk.fe0wsv.c14.kafka.us-east-1.amazonaws.com:9092,b-2.finalprojectmsk.fe0wsv.c14.kafka.us-east-1.amazonaws.com:9092'
+BOOTSTRAP_SERVERS='b-2.finalprojectmsk.zakr7r.c14.kafka.us-east-1.amazonaws.com:9092,b-1.finalprojectmsk.zakr7r.c14.kafka.us-east-1.amazonaws.com:9092,b-3.finalprojectmsk.zakr7r.c14.kafka.us-east-1.amazonaws.com:9092'
 table_name = 'bus_status'
 checkpoint_location = "s3://hui-final-project/msk/checkpoint/sparkjob"
 
